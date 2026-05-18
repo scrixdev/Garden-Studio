@@ -5,6 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Garden Studio</title>
   <link href="https://fonts.googleapis.com/css2?family=Bangers&family=Black+Han+Sans&family=Nunito:wght@400;600;700;800;900&display=swap" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <style>
     :root {
       --bg: #1a1a1a;
@@ -3108,6 +3109,11 @@
 </div>
 
 <script>
+// ========== SUPABASE ==========
+const SUPABASE_URL = 'https://gvdzxefsnrvgaoxoozaj.supabase.co';
+const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd2ZHp4ZWZzbnJ2Z2FveG9vemFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzkxMDA5NzQsImV4cCI6MjA5NDY3Njk3NH0.twe2SyYImB2LBL7mBDxAS4WTW2-UX9-L-gF6ozhkpVg';
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
 // ========== STATE ==========
 const STATE_DEFAULT = {
   adminCode: '1234',
@@ -3182,6 +3188,63 @@ function saveState() {
   } catch(e) {}
 }
 
+// ========== SUPABASE DATA LOADER ==========
+async function loadAllFromSupabase() {
+  try {
+    const [cats, photos, staffRows, events, updates, lb, faq, settings] = await Promise.all([
+      sb.from('categories').select('*').order('position'),
+      sb.from('photos').select('*').order('created_at', {ascending:false}),
+      sb.from('staff').select('*').order('created_at'),
+      sb.from('events').select('*').order('created_at', {ascending:false}),
+      sb.from('updates').select('*').order('created_at', {ascending:false}),
+      sb.from('leaderboard').select('*').order('score', {ascending:false}),
+      sb.from('faq').select('*').order('position'),
+      sb.from('site_settings').select('*').eq('id',1).single()
+    ]);
+
+    if (cats.data) STATE.categories = cats.data.map(c=>({id:c.id,name:c.name,color:c.color,icon:c.icon,position:c.position}));
+    if (photos.data) STATE.photos = photos.data.map(p=>({id:p.id,title:p.title,desc:p.description,imgUrl:p.img_url,cat:p.cat_id,gameLink:p.game_link,likes:p.likes||0,dislikes:p.dislikes||0,userReact:null,comments:[],date:new Date(p.created_at).toLocaleDateString('fr-FR',{day:'2-digit',month:'short'})}));
+    if (staffRows.data) STATE.staff = staffRows.data.map(s=>({id:s.id,name:s.name,role:s.role,bio:s.bio||'',avatarUrl:s.avatar_url||'',bannerUrl:s.banner_url||'',status:s.status||'offline',twitter:s.twitter||'',instagram:s.instagram||'',followers:s.followers||[],tags:s.tags||[]}));
+    if (events.data) STATE.events = events.data.map(e=>({id:e.id,title:e.title,type:e.type,day:e.day,month:e.month,desc:e.description||'',imgUrl:e.img_url||'',reactions:e.reactions||{fire:0,heart:0,wow:0},userReact:null,comments:[]}));
+    if (updates.data) STATE.updates = updates.data.map(u=>({id:u.id,version:u.version,date:u.date,items:u.items||[],imgUrl:u.img_url||'',reactions:u.reactions||{fire:0,heart:0,wow:0},userReact:null,comments:[]}));
+    if (lb.data) STATE.leaderboard = lb.data.map(e=>({id:e.id,name:e.name,score:e.score||0,detail:e.detail||'',kills:e.kills||0,wins:e.wins||0,coins:e.coins||0,avatarUrl:e.avatar_url||'',reactions:e.reactions||{fire:0,gg:0},userReact:null}));
+    if (faq.data) STATE.faq = faq.data.map(f=>({id:f.id,q:f.question,a:f.answer,position:f.position}));
+    if (settings.data) {
+      const s = settings.data;
+      STATE.siteName = s.site_name||STATE.siteName;
+      STATE.siteTagline = s.tagline||STATE.siteTagline;
+      STATE.siteDescription = s.description||'';
+      STATE.welcomeMsg = s.welcome_msg||'';
+      if (s.accent_main) applyAccent(s.accent_main, s.accent_light||s.accent_main);
+      STATE.socials = { discord:s.discord||'', twitter:s.twitter||'', instagram:s.instagram||'', youtube:s.youtube||'', tiktok:s.tiktok||'' };
+    }
+    // Load reactions for current user
+    if (STATE.currentUser) await loadUserReactions();
+  } catch(err) { console.warn('Supabase load error:', err); }
+}
+
+async function loadUserReactions() {
+  if (!STATE.currentUser) return;
+  const { data } = await sb.from('reactions').select('*').eq('user_id', STATE.currentUser.id);
+  if (!data) return;
+  data.forEach(r => {
+    if (r.target_type==='photo') { const p=STATE.photos.find(x=>x.id===r.target_id); if(p) p.userReact=r.type; }
+    else if (r.target_type==='event') { const e=STATE.events.find(x=>x.id===r.target_id); if(e) e.userReact=r.type; }
+    else if (r.target_type==='update') { const u=STATE.updates.find(x=>x.id===r.target_id); if(u) u.userReact=r.type; }
+    else if (r.target_type==='leaderboard') { const lb=STATE.leaderboard.find(x=>x.id===r.target_id); if(lb) lb.userReact=r.type; }
+  });
+}
+
+async function uploadToStorage(bucket, file) {
+  const ext = file.name.split('.').pop();
+  const path = `${Date.now()}_${Math.random().toString(36).slice(2)}.${ext}`;
+  const { error } = await sb.storage.from(bucket).upload(path, file, {cacheControl:'3600',upsert:false});
+  if (error) throw error;
+  const { data } = sb.storage.from(bucket).getPublicUrl(path);
+  return data.publicUrl;
+}
+
+
 const STATE = loadState();
 
 // ========== LOGIN ==========
@@ -3194,49 +3257,78 @@ function switchLoginMode(mode) {
   document.getElementById('register-error').classList.remove('show');
 }
 
-function doLogin() {
+async function doLogin() {
   const e = document.getElementById('login-email').value.trim().toLowerCase();
   const p = document.getElementById('login-pass').value;
   const errEl = document.getElementById('login-error');
   if (!e || !p) { errEl.textContent='Remplissez tous les champs.'; errEl.classList.add('show'); return; }
-  // Check admin credentials
-  if (e === STATE.adminEmail.toLowerCase() && p === STATE.adminPass) {
+  const btn = document.querySelector('#login-form-wrap .btn-submit');
+  if (btn) { btn.textContent='Connexion...'; btn.disabled=true; }
+  try {
+    const { data, error } = await sb.auth.signInWithPassword({ email: e, password: p });
+    if (error) throw error;
+    // Fetch profile
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
     STATE.loggedIn = true;
-    STATE.currentUser = { id:'__creator__', name:'Admin', handle:'@admin', bio:'Créateur du site', avatarUrl:'', bannerUrl:'', following:[], role:'creator' };
+    STATE.currentUser = {
+      id: data.user.id,
+      name: profile?.name || data.user.email.split('@')[0],
+      handle: profile?.handle || '@'+data.user.email.split('@')[0],
+      bio: profile?.bio || '',
+      avatarUrl: profile?.avatar_url || '',
+      bannerUrl: profile?.banner_url || '',
+      role: profile?.role || 'visitor',
+      following: []
+    };
+    await loadAllFromSupabase();
     showScreen('main'); renderAll();
-    return;
+  } catch(err) {
+    errEl.textContent = err.message==='Invalid login credentials' ? 'Identifiants incorrects.' : (err.message||'Erreur de connexion.');
+    errEl.classList.add('show');
+  } finally {
+    if (btn) { btn.textContent='SE CONNECTER'; btn.disabled=false; }
   }
-  // Check registered users
-  const user = STATE.users.find(u => u.email.toLowerCase()===e && u.password===p);
-  if (user) {
-    STATE.loggedIn = true;
-    STATE.currentUser = user;
-    showScreen('main'); renderAll();
-    return;
-  }
-  errEl.textContent='Identifiants incorrects. Réessayez.';
-  errEl.classList.add('show');
 }
 
-function doRegister() {
+async function doRegister() {
   const name = document.getElementById('reg-name').value.trim();
   const email = document.getElementById('reg-email').value.trim().toLowerCase();
   const pass = document.getElementById('reg-pass').value;
   const errEl = document.getElementById('register-error');
   errEl.classList.remove('show');
   if (!name || !email || !pass) { errEl.textContent='Remplissez tous les champs.'; errEl.classList.add('show'); return; }
-  if (pass.length < 4) { errEl.textContent='Mot de passe trop court (min. 4 caractères).'; errEl.classList.add('show'); return; }
-  if (STATE.users.find(u=>u.email.toLowerCase()===email)) { errEl.textContent='Cet e-mail est déjà utilisé.'; errEl.classList.add('show'); return; }
-  const newUser = { id:'u'+Date.now(), name, email, password:pass, handle:'@'+name.toLowerCase().replace(/\s+/g,'_'), bio:'', avatarUrl:'', bannerUrl:'', following:[], role:'visitor' };
-  STATE.users.push(newUser);
-  saveState();
-  STATE.loggedIn = true;
-  STATE.currentUser = newUser;
-  showToast('COMPTE CRÉÉ !', 'Bienvenue '+name);
-  showScreen('main'); renderAll();
+  if (pass.length < 6) { errEl.textContent='Mot de passe trop court (min. 6 caractères).'; errEl.classList.add('show'); return; }
+  const btn = document.querySelector('#register-form-wrap .btn-submit');
+  if (btn) { btn.textContent='Création...'; btn.disabled=true; }
+  try {
+    const { data, error } = await sb.auth.signUp({ email, password: pass, options: { data: { name } } });
+    if (error) throw error;
+    // Wait a moment for trigger to create profile, then fetch it
+    await new Promise(r => setTimeout(r, 800));
+    const { data: profile } = await sb.from('profiles').select('*').eq('id', data.user.id).single();
+    STATE.loggedIn = true;
+    STATE.currentUser = {
+      id: data.user.id,
+      name: profile?.name || name,
+      handle: profile?.handle || '@'+name.toLowerCase().replace(/\s+/g,'_'),
+      bio: profile?.bio || '',
+      avatarUrl: profile?.avatar_url || '',
+      bannerUrl: profile?.banner_url || '',
+      role: profile?.role || 'visitor',
+      following: []
+    };
+    await loadAllFromSupabase();
+    showToast('COMPTE CRÉÉ !', 'Bienvenue '+name);
+    showScreen('main'); renderAll();
+  } catch(err) {
+    errEl.textContent = err.message || 'Erreur lors de la création du compte.';
+    errEl.classList.add('show');
+  } finally {
+    if (btn) { btn.textContent='CRÉER MON COMPTE'; btn.disabled=false; }
+  }
 }
 
-function doLogout() { STATE.loggedIn = false; STATE.currentUser = null; showScreen('login'); }
+async function doLogout() { await sb.auth.signOut(); STATE.loggedIn = false; STATE.currentUser = null; showScreen('login'); }
 function goMain() { showScreen('main'); renderAll(); }
 function goProfile() {
   showScreen('profile');
