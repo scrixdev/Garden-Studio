@@ -3965,15 +3965,28 @@ function previewFile(inp) {
   r.onload=e=>{ pendingPhotoUrl=e.target.result; document.getElementById('preview-img').src=pendingPhotoUrl; document.getElementById('file-preview').style.display='block'; };
   r.readAsDataURL(f);
 }
-function addPhoto() {
+async function addPhoto() {
   const title=document.getElementById('add-title').value.trim();
   const cat=document.getElementById('add-cat').value;
   if (!title) { showToast('ERREUR','Saisissez un titre'); return; }
   const now=new Date();
   const gameLink=document.getElementById('add-gamelink').value.trim();
-  STATE.photos.push({ id:'p'+Date.now(), title, cat, desc:document.getElementById('add-desc').value.trim(), imgUrl:pendingPhotoUrl, gameLink:gameLink||'', date:now.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}), likes:0, dislikes:0, userReact:null, comments:[] });
+  const desc=document.getElementById('add-desc').value.trim();
+  // Upload image to Supabase Storage if present
+  let imgUrl = pendingPhotoUrl;
+  const fileInput = document.getElementById('file-input');
+  if (fileInput.files[0]) {
+    try { imgUrl = await uploadToStorage('photos', fileInput.files[0]); } catch(e) { showToast('ERREUR','Upload image échoué'); return; }
+  }
+  // Insert into Supabase
+  const { data, error } = await sb.from('photos').insert({
+    title, cat_id: cat, description: desc, img_url: imgUrl, game_link: gameLink||null, likes: 0, dislikes: 0
+  }).select().single();
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
+  const newPhoto = { id:data.id, title, cat, desc, imgUrl, gameLink:gameLink||'', date:now.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}), likes:0, dislikes:0, userReact:null, comments:[] };
+  STATE.photos.push(newPhoto);
   pendingPhotoUrl='';
-  document.getElementById('file-input').value='';
+  fileInput.value='';
   document.getElementById('file-preview').style.display='none';
   document.getElementById('add-title').value='';
   document.getElementById('add-desc').value='';
@@ -3982,7 +3995,9 @@ function addPhoto() {
   showToast('PHOTO PUBLIÉE !','Visible sur le site');
   renderPhotosTable(); updateStats(); renderDashboard(); renderCatTabs();
 }
-function deletePhoto(id) {
+async function deletePhoto(id) {
+  const { error } = await sb.from('photos').delete().eq('id', id);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   STATE.photos=STATE.photos.filter(p=>p.id!==id);
   saveState();
   renderPhotosTable(); updateStats(); renderDashboard(); showToast('PHOTO SUPPRIMÉE','');
@@ -4029,11 +4044,13 @@ function selectEditCatIcon(el, iconKey) {
   el.classList.add('active');
   document.getElementById('edit-cat-icon-val').value = iconKey;
 }
-function addCategory() {
+async function addCategory() {
   const name=document.getElementById('new-cat-name').value.trim();
   const icon=document.getElementById('new-cat-emoji').value.trim()||'camera';
   if (!name) return;
-  STATE.categories.push({id:'cat'+Date.now(),name,icon});
+  const { data, error } = await sb.from('categories').insert({ name, icon, position: STATE.categories.length }).select().single();
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
+  STATE.categories.push({id:data.id,name,icon,position:STATE.categories.length});
   document.getElementById('new-cat-name').value='';
   document.getElementById('new-cat-emoji').value='camera';
   saveState();
@@ -4069,20 +4086,33 @@ function previewAvatar(inp) {
   r.onload=e=>{ pendingAvatarUrl=e.target.result; document.getElementById('preview-avatar').src=pendingAvatarUrl; document.getElementById('avatar-preview').style.display='block'; };
   r.readAsDataURL(f);
 }
-function addStaff() {
+async function addStaff() {
   const name=document.getElementById('staff-name').value.trim();
   const role=document.getElementById('staff-role').value.trim();
   if (!name||!role) { showToast('ERREUR','Nom et rôle requis'); return; }
   const tags=document.getElementById('staff-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
-  STATE.staff.push({ id:'s'+Date.now(), name, role, tags, status:document.getElementById('staff-status').value, twitter:document.getElementById('staff-twitter').value.trim(), instagram:document.getElementById('staff-instagram').value.trim(), avatarUrl:pendingAvatarUrl, bio:document.getElementById('staff-bio').value.trim(), followers:[], bannerUrl:'' });
+  const status=document.getElementById('staff-status').value;
+  const twitter=document.getElementById('staff-twitter').value.trim();
+  const instagram=document.getElementById('staff-instagram').value.trim();
+  const bio=document.getElementById('staff-bio').value.trim();
+  let avatarUrl = pendingAvatarUrl;
+  const avatarFileInput = document.getElementById('staff-avatar-input');
+  if (avatarFileInput && avatarFileInput.files[0]) {
+    try { avatarUrl = await uploadToStorage('avatars', avatarFileInput.files[0]); } catch(e) { showToast('ERREUR','Upload avatar échoué'); return; }
+  }
+  const { data, error } = await sb.from('staff').insert({ name, role, tags, status, twitter, instagram, bio, avatar_url: avatarUrl||null, banner_url: null, followers: [] }).select().single();
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
+  STATE.staff.push({ id:data.id, name, role, tags, status, twitter, instagram, avatarUrl:avatarUrl||'', bio, followers:[], bannerUrl:'' });
   pendingAvatarUrl='';
-  document.getElementById('staff-avatar-input').value='';
+  if (avatarFileInput) avatarFileInput.value='';
   document.getElementById('avatar-preview').style.display='none';
   ['staff-name','staff-role','staff-tags','staff-twitter','staff-instagram','staff-bio'].forEach(id=>document.getElementById(id).value='');
   saveState();
   renderStaffTable(); updateStats(); showToast('MEMBRE AJOUTÉ !',name);
 }
-function deleteStaff(id) {
+async function deleteStaff(id) {
+  const { error } = await sb.from('staff').delete().eq('id', id);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   STATE.staff=STATE.staff.filter(s=>s.id!==id);
   saveState();
   renderStaffTable(); updateStats(); showToast('MEMBRE SUPPRIMÉ','');
@@ -4121,17 +4151,30 @@ function previewEditFile(inp) {
   r.readAsDataURL(f);
 }
 function closeEditPhoto() { document.getElementById('edit-photo-modal').classList.remove('open'); }
-function saveEditPhoto() {
+async function saveEditPhoto() {
   const id = document.getElementById('edit-photo-id').value;
   const title = document.getElementById('edit-photo-title').value.trim();
   if (!title) { showToast('ERREUR','Titre requis'); return; }
   const idx = STATE.photos.findIndex(p=>p.id===id);
   if (idx===-1) return;
+  const cat = document.getElementById('edit-photo-cat').value;
+  const desc = document.getElementById('edit-photo-desc').value.trim();
+  const gameLink = (document.getElementById('edit-photo-gamelink')||{}).value||STATE.photos[idx].gameLink||'';
+  let imgUrl = STATE.photos[idx].imgUrl;
+  // Upload new image if changed
+  const editFileInput = document.getElementById('edit-file-input');
+  if (editFileInput && editFileInput.files[0]) {
+    try { imgUrl = await uploadToStorage('photos', editFileInput.files[0]); } catch(e) { showToast('ERREUR','Upload image échoué'); return; }
+  } else if (editPhotoUrl !== null) {
+    imgUrl = editPhotoUrl;
+  }
+  const { error } = await sb.from('photos').update({ title, cat_id: cat, description: desc, img_url: imgUrl, game_link: gameLink||null }).eq('id', id);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   STATE.photos[idx].title = title;
-  STATE.photos[idx].cat = document.getElementById('edit-photo-cat').value;
-  STATE.photos[idx].desc = document.getElementById('edit-photo-desc').value.trim();
-  STATE.photos[idx].gameLink = (document.getElementById('edit-photo-gamelink')||{}).value||STATE.photos[idx].gameLink||'';
-  if (editPhotoUrl !== null) STATE.photos[idx].imgUrl = editPhotoUrl;
+  STATE.photos[idx].cat = cat;
+  STATE.photos[idx].desc = desc;
+  STATE.photos[idx].gameLink = gameLink;
+  STATE.photos[idx].imgUrl = imgUrl;
   saveState();
   closeEditPhoto();
   renderPhotosTable(); renderDashboard(); renderPhotos();
@@ -4196,22 +4239,40 @@ function previewEditBanner(inp) {
   r.readAsDataURL(f);
 }
 function closeEditStaff() { document.getElementById('edit-staff-modal').classList.remove('open'); }
-function saveEditStaff() {
+async function saveEditStaff() {
   const id = document.getElementById('edit-staff-id').value;
   const name = document.getElementById('edit-staff-name').value.trim();
   const role = document.getElementById('edit-staff-role').value.trim();
   if (!name||!role) { showToast('ERREUR','Nom et rôle requis'); return; }
   const idx = STATE.staff.findIndex(s=>s.id===id);
   if (idx===-1) return;
+  const tags = document.getElementById('edit-staff-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
+  const status = document.getElementById('edit-staff-status').value;
+  const twitter = document.getElementById('edit-staff-twitter').value.trim();
+  const instagram = document.getElementById('edit-staff-instagram').value.trim();
+  const bio = (document.getElementById('edit-staff-bio')||{}).value||STATE.staff[idx].bio||'';
+  let avatarUrl = STATE.staff[idx].avatarUrl;
+  let bannerUrl = STATE.staff[idx].bannerUrl;
+  // Upload new avatar if changed via file
+  const editAvatarInput = document.getElementById('edit-avatar-input');
+  if (editAvatarInput && editAvatarInput.files[0]) {
+    try { avatarUrl = await uploadToStorage('avatars', editAvatarInput.files[0]); } catch(e) { showToast('ERREUR','Upload avatar échoué'); return; }
+  } else if (editAvatarUrl !== null) { avatarUrl = editAvatarUrl; }
+  const editBannerInput = document.getElementById('edit-banner-input');
+  if (editBannerInput && editBannerInput.files[0]) {
+    try { bannerUrl = await uploadToStorage('banners', editBannerInput.files[0]); } catch(e) { showToast('ERREUR','Upload bannière échoué'); return; }
+  } else if (editBannerUrl !== null) { bannerUrl = editBannerUrl; }
+  const { error } = await sb.from('staff').update({ name, role, tags, status, twitter, instagram, bio, avatar_url: avatarUrl||null, banner_url: bannerUrl||null }).eq('id', id);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   STATE.staff[idx].name = name;
   STATE.staff[idx].role = role;
-  STATE.staff[idx].tags = document.getElementById('edit-staff-tags').value.split(',').map(t=>t.trim()).filter(Boolean);
-  STATE.staff[idx].status = document.getElementById('edit-staff-status').value;
-  STATE.staff[idx].twitter = document.getElementById('edit-staff-twitter').value.trim();
-  STATE.staff[idx].instagram = document.getElementById('edit-staff-instagram').value.trim();
-  STATE.staff[idx].bio = (document.getElementById('edit-staff-bio')||{}).value||STATE.staff[idx].bio||'';
-  if (editAvatarUrl !== null) STATE.staff[idx].avatarUrl = editAvatarUrl;
-  if (editBannerUrl !== null) STATE.staff[idx].bannerUrl = editBannerUrl;
+  STATE.staff[idx].tags = tags;
+  STATE.staff[idx].status = status;
+  STATE.staff[idx].twitter = twitter;
+  STATE.staff[idx].instagram = instagram;
+  STATE.staff[idx].bio = bio;
+  STATE.staff[idx].avatarUrl = avatarUrl;
+  STATE.staff[idx].bannerUrl = bannerUrl;
   saveState();
   closeEditStaff();
   renderStaffTable(); renderStaffGrid();
@@ -4261,13 +4322,15 @@ function applyCustomColor() {
   saveState();
   showToast('COULEUR APPLIQUÉE !',hex);
 }
-function saveSocials() {
+async function saveSocials() {
   if (!STATE.socials) STATE.socials={};
   STATE.socials.discord = document.getElementById('set-discord').value.trim();
   STATE.socials.twitter = document.getElementById('set-twitter').value.trim();
   STATE.socials.instagram = document.getElementById('set-instagram').value.trim();
   STATE.socials.youtube = document.getElementById('set-youtube').value.trim();
   STATE.socials.tiktok = document.getElementById('set-tiktok').value.trim();
+  const { error } = await sb.from('site_settings').update({ discord: STATE.socials.discord, twitter: STATE.socials.twitter, instagram: STATE.socials.instagram, youtube: STATE.socials.youtube, tiktok: STATE.socials.tiktok }).eq('id', 1);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   saveState();
   showToast('LIENS SAUVEGARDÉS !','Réseaux sociaux mis à jour');
 }
@@ -4337,7 +4400,7 @@ function applyCustomColor() {
   showToast('COULEUR APPLIQUÉE !',hex);
   if(document.getElementById('custom-color-picker')) document.getElementById('custom-color-picker').value=hex;
 }
-function saveSettings() {
+async function saveSettings() {
   STATE.siteName=document.getElementById('set-name').value||'Garden Studio';
   STATE.siteTagline=document.getElementById('set-tagline').value;
   STATE.siteDescription=document.getElementById('set-description')?.value||'';
@@ -4347,6 +4410,8 @@ function saveSettings() {
       el.innerHTML=parts[0]+' <span>'+parts.slice(1).join(' ')+'</span>';
     } else { el.innerHTML=STATE.siteName; }
   });
+  const { error } = await sb.from('site_settings').update({ site_name: STATE.siteName, tagline: STATE.siteTagline, description: STATE.siteDescription }).eq('id', 1);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   saveState();
   showToast('PARAMÈTRES SAUVEGARDÉS !','Site mis à jour');
 }
