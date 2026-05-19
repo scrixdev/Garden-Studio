@@ -3980,7 +3980,7 @@ async function addPhoto() {
   }
   // Insert into Supabase
   const { data, error } = await sb.from('photos').insert({
-    title, cat_id: cat, description: desc, img_url: imgUrl, game_link: gameLink||null, likes: 0, dislikes: 0
+    id: crypto.randomUUID(), title, cat_id: cat, description: desc, img_url: imgUrl, game_link: gameLink||null, likes: 0, dislikes: 0
   }).select().single();
   if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   const newPhoto = { id:data.id, title, cat, desc, imgUrl, gameLink:gameLink||'', date:now.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}), likes:0, dislikes:0, userReact:null, comments:[] };
