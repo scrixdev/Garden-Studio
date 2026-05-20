@@ -3969,6 +3969,7 @@ async function addPhoto() {
   const title=document.getElementById('add-title').value.trim();
   const cat=document.getElementById('add-cat').value;
   if (!title) { showToast('ERREUR','Saisissez un titre'); return; }
+  if (!cat) { showToast('ERREUR','Sélectionnez une catégorie'); return; }
   const now=new Date();
   const gameLink=document.getElementById('add-gamelink').value.trim();
   const desc=document.getElementById('add-desc').value.trim();
@@ -3980,7 +3981,7 @@ async function addPhoto() {
   }
   // Insert into Supabase
   const { data, error } = await sb.from('photos').insert({
-    id: crypto.randomUUID(), title, cat_id: cat, description: desc, img_url: imgUrl, game_link: gameLink||null, likes: 0, dislikes: 0
+    title, cat_id: cat, description: desc, img_url: imgUrl, game_link: gameLink||null, likes: 0, dislikes: 0
   }).select().single();
   if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   const newPhoto = { id:data.id, title, cat, desc, imgUrl, gameLink:gameLink||'', date:now.toLocaleDateString('fr-FR',{day:'2-digit',month:'short'}), likes:0, dislikes:0, userReact:null, comments:[] };
@@ -4056,7 +4057,9 @@ async function addCategory() {
   saveState();
   renderCatsList(); renderCatSelect(); renderCatTabs(); updateStats(); showToast('CATÉGORIE CRÉÉE !',name);
 }
-function deleteCat(id) {
+async function deleteCat(id) {
+  const { error } = await sb.from('categories').delete().eq('id', id);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   STATE.categories=STATE.categories.filter(c=>c.id!==id);
   STATE.photos=STATE.photos.filter(p=>p.cat!==id);
   if (STATE.currentCat===id) STATE.currentCat='all';
@@ -4311,17 +4314,6 @@ function syncColorHex(inp) {
 function syncColorPicker(inp) {
   document.getElementById('custom-color-hex').value = inp.value;
 }
-function applyCustomColor() {
-  const hex = document.getElementById('custom-color-hex').value.trim();
-  if (!/^#[0-9a-fA-F]{6}$/.test(hex)) { showToast('ERREUR','Format hex invalide (ex: #FF6B00)'); return; }
-  document.querySelectorAll('.color-swatch').forEach(s=>s.classList.remove('active'));
-  STATE.accentMain=hex; STATE.accentLight=hex;
-  document.documentElement.style.setProperty('--yellow',hex);
-  document.documentElement.style.setProperty('--yellow2',hex);
-  document.documentElement.style.setProperty('--yellow-dark',hex);
-  saveState();
-  showToast('COULEUR APPLIQUÉE !',hex);
-}
 async function saveSocials() {
   if (!STATE.socials) STATE.socials={};
   STATE.socials.discord = document.getElementById('set-discord').value.trim();
@@ -4484,7 +4476,8 @@ function setUserRole(userId, role) {
     sb.from('profiles').update({ role: role }).eq('id', userId)
       .then(({error}) => { if(error) console.warn('Role update error:', error); });
   }
-  showToast('RÔLE MIS À JOUR !', `${u.name} → ${ROLE_LABELS[role]}`);
+  const ROLE_TEXT = {visitor:'Membre', staff:'Staff', coowner:'Co-Owner', owner:'Owner', creator:'Créateur'};
+  showToast('RÔLE MIS À JOUR !', `${u.name} → ${ROLE_TEXT[role]||role}`);
 }
 
 // ========== UPDATES ==========
@@ -4584,18 +4577,26 @@ function sendUpdComment(id){
   if(countEl)countEl.textContent=u.comments.length;
   saveState();
 }
-function addUpdate() {
+async function addUpdate() {
   const version=document.getElementById('upd-version').value.trim();
   const date=document.getElementById('upd-date').value.trim();
   const content=document.getElementById('upd-content').value.trim();
   if (!version||!content) { showToast('ERREUR','Version et contenu requis'); return; }
   const items=content.split('\n').map(l=>l.trim()).filter(Boolean);
-  STATE.updates.push({id:'u'+Date.now(),version,date:date||new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'}),items,imgUrl:pendingUpdImgUrl,reactions:{fire:0,heart:0,wow:0},userReact:null,comments:[]});
+  const dateLabel=date||new Date().toLocaleDateString('fr-FR',{day:'2-digit',month:'long',year:'numeric'});
+  let imgUrl=pendingUpdImgUrl;
+  const updImgInput=document.getElementById('upd-img-input');
+  if (updImgInput && updImgInput.files[0]) {
+    try { imgUrl = await uploadToStorage('photos', updImgInput.files[0]); } catch(e) { showToast('ERREUR','Upload image échoué'); return; }
+  }
+  const { data, error } = await sb.from('updates').insert({ version, date: dateLabel, items, img_url: imgUrl||null, reactions:{fire:0,heart:0,wow:0} }).select().single();
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
+  STATE.updates.push({id:data.id,version,date:dateLabel,items,imgUrl:imgUrl,reactions:{fire:0,heart:0,wow:0},userReact:null,comments:[]});
   pendingUpdImgUrl='';
   document.getElementById('upd-version').value='';
   document.getElementById('upd-date').value='';
   document.getElementById('upd-content').value='';
-  document.getElementById('upd-img-input').value='';
+  updImgInput.value='';
   document.getElementById('upd-img-preview').style.display='none';
   saveState();
   renderAdminUpdates();
@@ -4614,7 +4615,11 @@ function renderAdminUpdates() {
     </div>
   `).join('')||'<p style="color:#555;font-size:.82rem">Aucune version publiée.</p>';
 }
-function deleteUpdate(id) { STATE.updates=STATE.updates.filter(u=>u.id!==id); saveState(); renderAdminUpdates(); renderUpdates(); showToast('VERSION SUPPRIMÉE',''); }
+async function deleteUpdate(id) {
+  const { error } = await sb.from('updates').delete().eq('id', id);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
+  STATE.updates=STATE.updates.filter(u=>u.id!==id); saveState(); renderAdminUpdates(); renderUpdates(); showToast('VERSION SUPPRIMÉE','');
+}
 function openEditUpdate(id){
   const u=STATE.updates.find(x=>x.id===id);
   if(!u)return;
@@ -4625,16 +4630,20 @@ function openEditUpdate(id){
   document.getElementById('edit-update-modal').classList.add('open');
 }
 function closeEditUpdate(){document.getElementById('edit-update-modal').classList.remove('open');}
-function saveEditUpdate(){
+async function saveEditUpdate(){
   const id=document.getElementById('edit-upd-id').value;
   const version=document.getElementById('edit-upd-version').value.trim();
   const content=document.getElementById('edit-upd-content').value.trim();
   if(!version||!content){showToast('ERREUR','Version et contenu requis');return;}
   const idx=STATE.updates.findIndex(u=>u.id===id);
   if(idx===-1)return;
+  const date=document.getElementById('edit-upd-date').value.trim()||STATE.updates[idx].date;
+  const items=content.split('\n').map(l=>l.trim()).filter(Boolean);
+  const { error } = await sb.from('updates').update({ version, date, items }).eq('id', id);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   STATE.updates[idx].version=version;
-  STATE.updates[idx].date=document.getElementById('edit-upd-date').value.trim()||STATE.updates[idx].date;
-  STATE.updates[idx].items=content.split('\n').map(l=>l.trim()).filter(Boolean);
+  STATE.updates[idx].date=date;
+  STATE.updates[idx].items=items;
   saveState();closeEditUpdate();renderAdminUpdates();renderUpdates();
   showToast('MISE À JOUR MODIFIÉE !',version);
 }
@@ -4685,7 +4694,7 @@ function previewLbAvatar(inp) {
   };
   r.readAsDataURL(f);
 }
-function addLbEntry() {
+async function addLbEntry() {
   const name=document.getElementById('lb-name').value.trim();
   const score=parseInt(document.getElementById('lb-score-inp').value)||0;
   const detail=document.getElementById('lb-detail').value.trim();
@@ -4693,7 +4702,14 @@ function addLbEntry() {
   const wins=parseInt(document.getElementById('lb-wins').value)||0;
   const coins=parseInt(document.getElementById('lb-coins').value)||0;
   if (!name) { showToast('ERREUR','Pseudo requis'); return; }
-  STATE.leaderboard.push({id:'lb'+Date.now(),name,score,detail,kills,wins,coins,avatarUrl:pendingLbAvatarUrl,reactions:{fire:0,gg:0},userReact:null});
+  let avatarUrl=pendingLbAvatarUrl;
+  const lbAvatarInput=document.getElementById('lb-avatar-input');
+  if (lbAvatarInput && lbAvatarInput.files[0]) {
+    try { avatarUrl = await uploadToStorage('avatars', lbAvatarInput.files[0]); } catch(e) { showToast('ERREUR','Upload avatar échoué'); return; }
+  }
+  const { data, error } = await sb.from('leaderboard').insert({ name, score, detail, kills, wins, coins, avatar_url: avatarUrl||null, reactions:{fire:0,gg:0} }).select().single();
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
+  STATE.leaderboard.push({id:data.id,name,score,detail,kills,wins,coins,avatarUrl:avatarUrl||'',reactions:{fire:0,gg:0},userReact:null});
   pendingLbAvatarUrl='';
   document.getElementById('lb-avatar-preview').style.display='none';
   document.getElementById('lb-avatar-preview-wrap').querySelector('svg').style.display='';
@@ -4724,7 +4740,11 @@ function renderAdminLb() {
     </div>
   `).join('')||'<p style="color:#555;font-size:.82rem">Aucune entrée.</p>';
 }
-function deleteLbEntry(id) { STATE.leaderboard=STATE.leaderboard.filter(e=>e.id!==id); saveState(); renderAdminLb(); renderLeaderboard(); showToast('ENTRÉE SUPPRIMÉE',''); }
+async function deleteLbEntry(id) {
+  const { error } = await sb.from('leaderboard').delete().eq('id', id);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
+  STATE.leaderboard=STATE.leaderboard.filter(e=>e.id!==id); saveState(); renderAdminLb(); renderLeaderboard(); showToast('ENTRÉE SUPPRIMÉE','');
+}
 function openEditLb(id) {
   const e=STATE.leaderboard.find(x=>x.id===id);
   if(!e)return;
@@ -4748,19 +4768,28 @@ function previewEditLbAvatar(inp){
   r.onload=e=>{editLbAvatarUrl=e.target.result;const img=document.getElementById('edit-lb-avatar-preview');img.src=editLbAvatarUrl;img.style.display='block';};
   r.readAsDataURL(f);
 }
-function saveEditLb(){
+async function saveEditLb(){
   const id=document.getElementById('edit-lb-id').value;
   const name=document.getElementById('edit-lb-name').value.trim();
   if(!name){showToast('ERREUR','Pseudo requis');return;}
   const idx=STATE.leaderboard.findIndex(e=>e.id===id);
   if(idx===-1)return;
+  const score=parseInt(document.getElementById('edit-lb-score').value)||0;
+  const kills=parseInt(document.getElementById('edit-lb-kills').value)||0;
+  const wins=parseInt(document.getElementById('edit-lb-wins').value)||0;
+  const coins=parseInt(document.getElementById('edit-lb-coins').value)||0;
+  const detail=document.getElementById('edit-lb-detail').value.trim();
+  let avatarUrl=STATE.leaderboard[idx].avatarUrl;
+  if(editLbAvatarUrl!==null)avatarUrl=editLbAvatarUrl;
+  const { error } = await sb.from('leaderboard').update({ name, score, kills, wins, coins, detail, avatar_url: avatarUrl||null }).eq('id', id);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   STATE.leaderboard[idx].name=name;
-  STATE.leaderboard[idx].score=parseInt(document.getElementById('edit-lb-score').value)||0;
-  STATE.leaderboard[idx].kills=parseInt(document.getElementById('edit-lb-kills').value)||0;
-  STATE.leaderboard[idx].wins=parseInt(document.getElementById('edit-lb-wins').value)||0;
-  STATE.leaderboard[idx].coins=parseInt(document.getElementById('edit-lb-coins').value)||0;
-  STATE.leaderboard[idx].detail=document.getElementById('edit-lb-detail').value.trim();
-  if(editLbAvatarUrl!==null)STATE.leaderboard[idx].avatarUrl=editLbAvatarUrl;
+  STATE.leaderboard[idx].score=score;
+  STATE.leaderboard[idx].kills=kills;
+  STATE.leaderboard[idx].wins=wins;
+  STATE.leaderboard[idx].coins=coins;
+  STATE.leaderboard[idx].detail=detail;
+  STATE.leaderboard[idx].avatarUrl=avatarUrl;
   saveState();closeEditLb();renderAdminLb();renderLeaderboard();
   showToast('JOUEUR MODIFIÉ !',name);
 }
@@ -4779,11 +4808,13 @@ function renderFaq() {
   `).join('');
 }
 function toggleFaq(id) { document.getElementById('faq-'+id).classList.toggle('open'); }
-function addFaqItem() {
+async function addFaqItem() {
   const q=document.getElementById('faq-q').value.trim();
   const a=document.getElementById('faq-a').value.trim();
   if (!q||!a) { showToast('ERREUR','Question et réponse requises'); return; }
-  STATE.faq.push({id:'f'+Date.now(),q,a});
+  const { data, error } = await sb.from('faq').insert({ question: q, answer: a, position: STATE.faq.length }).select().single();
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
+  STATE.faq.push({id:data.id,q,a,position:STATE.faq.length});
   document.getElementById('faq-q').value=''; document.getElementById('faq-a').value='';
   saveState(); renderAdminFaq(); renderFaq(); showToast('QUESTION AJOUTÉE !','');
 }
@@ -4803,7 +4834,11 @@ function renderAdminFaq() {
     </div>
   `).join('')||'<p style="color:#555;font-size:.82rem">Aucune question.</p>';
 }
-function deleteFaq(id) { STATE.faq=STATE.faq.filter(f=>f.id!==id); saveState(); renderAdminFaq(); renderFaq(); showToast('QUESTION SUPPRIMÉE',''); }
+async function deleteFaq(id) {
+  const { error } = await sb.from('faq').delete().eq('id', id);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
+  STATE.faq=STATE.faq.filter(f=>f.id!==id); saveState(); renderAdminFaq(); renderFaq(); showToast('QUESTION SUPPRIMÉE','');
+}
 function openEditFaq(id) {
   const f=STATE.faq.find(x=>x.id===id);
   if(!f)return;
@@ -4813,13 +4848,15 @@ function openEditFaq(id) {
   document.getElementById('edit-faq-modal').classList.add('open');
 }
 function closeEditFaq(){document.getElementById('edit-faq-modal').classList.remove('open');}
-function saveEditFaq(){
+async function saveEditFaq(){
   const id=document.getElementById('edit-faq-id').value;
   const q=document.getElementById('edit-faq-q').value.trim();
   const a=document.getElementById('edit-faq-a').value.trim();
   if(!q||!a){showToast('ERREUR','Question et réponse requises');return;}
   const idx=STATE.faq.findIndex(f=>f.id===id);
   if(idx===-1)return;
+  const { error } = await sb.from('faq').update({ question: q, answer: a }).eq('id', id);
+  if (error) { showToast('ERREUR', error.message||'Erreur Supabase'); return; }
   STATE.faq[idx].q=q;
   STATE.faq[idx].a=a;
   saveState();closeEditFaq();renderAdminFaq();renderFaq();
