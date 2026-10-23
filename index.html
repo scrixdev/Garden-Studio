@@ -3,66 +3,147 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#07080b">
 <title>Garden Studio</title>
 <link rel="icon" href="logo.png">
-<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;600;700;800&display=swap" rel="stylesheet">
 <style>
-:root{--bg:#07080b;--surface:#12141a;--surface2:#1a1d25;--line:#232733;--accent:#d4d7dd;--on:#07080b;--text:#f4f5f7;--muted:#8a8f99;--ok:#34d399;--danger:#ff6b6b}
+:root{--bg:#07080b;--s:#12141a;--s2:#1a1d25;--line:#232733;--line2:#3a3f4c;--acc:#d4d7dd;--on:#07080b;--tx:#f4f5f7;--mu:#8a8f99;--ok:#34d399;--dg:#ff6b6b;--pad:clamp(16px,4vw,56px)}
 *{box-sizing:border-box;margin:0}
-body{background:var(--bg);color:var(--text);font:500 15px/1.5 Manrope,system-ui,sans-serif;min-height:100vh;padding-bottom:84px}
-h1{font-size:26px;font-weight:800;letter-spacing:-.8px}
-h2{font-size:20px;font-weight:800;letter-spacing:-.4px;margin-bottom:12px}
-main{max-width:720px;margin:0 auto;padding:22px 18px}
-.muted{color:var(--muted);font-size:13px}
-.box{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px}
-input,textarea{width:100%;background:var(--surface);color:var(--text);border:1px solid #2a2e3a;border-radius:14px;padding:13px 14px;font:inherit;margin-bottom:10px}
-input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
-button{font:700 14px Manrope,sans-serif;border:0;border-radius:14px;padding:12px 18px;cursor:pointer;background:var(--accent);color:var(--on)}
-button.ghost{background:transparent;color:var(--muted)}
-button.danger{background:transparent;color:var(--danger)}
-.center{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:28px;max-width:380px;margin:0 auto;text-align:center}
-.center>*{width:100%}.center img{width:84px;height:84px;border-radius:20px;margin:0 auto 14px}
-.err{color:var(--danger);font-size:13px;min-height:20px}
-nav{position:fixed;bottom:0;left:0;right:0;background:#0b0c10;border-top:1px solid var(--line);display:flex;height:68px}
-nav button{flex:1;background:none;color:var(--muted);border-radius:0;border-bottom:3px solid transparent}
-nav button.on{color:#fff;border-bottom-color:var(--accent)}
-.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
-.game{padding:0;overflow:hidden}.game .ph{aspect-ratio:2/3;background:linear-gradient(160deg,#3a3f4c,#12141a);display:flex;align-items:flex-end;padding:12px;font-weight:800;font-size:18px}
-.game .in{padding:10px 12px}
-.chip{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--surface2);color:var(--accent)}
-#msgs{height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
-.m{max-width:80%;background:var(--surface2);border-radius:16px;padding:8px 12px}.m.me{align-self:flex-end;background:var(--accent);color:var(--on)}.m .n{font-size:11px;opacity:.7}
-.row{display:flex;gap:8px}.row input{margin:0}
+html{background:var(--bg)}
+body{background:var(--bg);color:var(--tx);font:500 15px/1.5 Manrope,system-ui,sans-serif;min-height:100vh;-webkit-font-smoothing:antialiased}
+h1{font-size:28px;font-weight:800;letter-spacing:-.8px;line-height:1.15}
+h2{font-size:22px;font-weight:800;letter-spacing:-.4px}
+.mu{color:var(--mu);font-size:13px}
+button,.btn{font:700 14px Manrope,sans-serif;border:0;border-radius:99px;padding:0 22px;height:46px;display:inline-flex;align-items:center;justify-content:center;gap:8px;cursor:pointer;background:var(--acc);color:var(--on);text-decoration:none;transition:transform .12s,opacity .15s}
+button:hover,.btn:hover{opacity:.88}button:active{transform:scale(.97)}
+button.ghost{background:transparent;color:var(--tx);border:1px solid var(--line2)}
+button.ghost:hover{background:var(--s2);opacity:1}
+button.dk{background:var(--bg);color:#fff}
+button.danger{background:transparent;color:var(--dg);height:auto;padding:8px 4px}
+button.sm{height:38px;padding:0 18px;font-size:13px}
+input,textarea{width:100%;background:var(--s);color:var(--tx);border:1px solid #2a2e3a;border-radius:14px;padding:14px 16px;font:inherit;margin-bottom:10px;transition:border-color .15s}
+input::placeholder,textarea::placeholder{color:#5d626d}
+input:focus,textarea:focus{outline:0;border-color:var(--acc)}
+button:focus-visible,a:focus-visible,.gc:focus-visible{outline:2px solid var(--acc);outline-offset:3px}
+.err{color:var(--dg);font-size:13px;min-height:20px}
+.logo{width:40px;height:40px;border-radius:10px;background:#fff;overflow:hidden;flex:none}.logo img{width:100%;height:100%;object-fit:cover;transform:scale(1.12);display:block}
+.center{min-height:100vh;display:flex;flex-direction:column;justify-content:center;gap:10px;padding:28px;max-width:380px;margin:0 auto;text-align:center}
+.center .logo{width:84px;height:84px;border-radius:22px;margin:0 auto 14px}
+.center .row2{display:flex;flex-direction:column;gap:10px;margin-top:6px}
+.top{position:sticky;top:0;z-index:5;background:rgba(7,8,11,.88);backdrop-filter:blur(12px);border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:16px;padding:0 var(--pad);height:68px}
+.brand{display:flex;align-items:center;gap:12px;font-weight:800;font-size:13px;letter-spacing:3px;color:var(--acc);white-space:nowrap}
+nav{display:flex;gap:6px;height:100%}
+nav button{background:none;color:var(--mu);border-radius:0;height:100%;padding:0 16px;flex-direction:column;justify-content:center;gap:6px;font-weight:600;font-size:14px}
+nav button:hover{opacity:1;color:var(--tx)}
+nav button i{height:3px;width:0;border-radius:3px;background:var(--acc);transition:width .22s}
+nav button.on{color:#fff;font-weight:800}nav button.on i{width:24px}
+main{width:100%;padding:28px var(--pad) 72px}
+.sec{display:flex;align-items:baseline;justify-content:space-between;margin:36px 0 16px}
+.sec a{color:var(--acc);font-size:13px;font-weight:700;cursor:pointer}
+.hero{position:relative;height:clamp(280px,38vw,420px);border-radius:28px;overflow:hidden;border:1px solid var(--line);background-size:cover;background-position:center;display:flex;flex-direction:column;justify-content:flex-end;padding:clamp(20px,3vw,40px)}
+.hero::before{content:"";position:absolute;inset:0;background:linear-gradient(180deg,rgba(7,8,11,.15),rgba(7,8,11,.85))}
+.hero>*{position:relative}.hero h1{font-size:clamp(34px,5vw,56px);letter-spacing:-2px;line-height:.98;max-width:14ch}
+.hero .tags{margin-bottom:14px}
+.hero.empty{background:var(--acc);color:var(--on)}.hero.empty::before{display:none}.hero.empty h1{letter-spacing:-2px}.hero.empty button{margin-top:20px;align-self:flex-start}
+.hero .acts{margin-top:18px;display:flex;gap:10px;align-items:center}
+.dots{position:absolute;right:clamp(20px,3vw,40px);bottom:clamp(24px,3vw,42px);display:flex;gap:6px}
+.dots i{height:4px;width:6px;border-radius:4px;background:rgba(255,255,255,.4);transition:width .25s,background .25s}.dots i.on{width:22px;background:#fff}
+.tags{display:flex;flex-wrap:wrap;gap:8px}
+.st,.tag{font-size:12px;font-weight:700;padding:5px 12px;border-radius:99px}
+.st{background:rgba(212,215,221,.14);color:var(--acc)}.st.ok{background:rgba(52,211,153,.14);color:var(--ok)}
+.tag{border:1px solid var(--line2);color:var(--tx)}
+.grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(clamp(150px,18vw,220px),1fr));gap:22px 16px}
+.rail{display:flex;gap:16px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;scrollbar-color:var(--line) transparent}
+.rail .gc{width:clamp(150px,16vw,200px);flex:none}
+.gc{cursor:pointer;display:block;text-align:left}
+.gc .po{aspect-ratio:2/3;border-radius:20px;border:1px solid var(--line);background-size:cover;background-position:center;position:relative;display:flex;align-items:flex-end;padding:14px;font-weight:800;font-size:20px;line-height:1;text-transform:uppercase;overflow:hidden;transition:border-color .15s}
+.gc:hover .po{border-color:var(--line2)}
+.gc .pl{position:absolute;top:10px;left:10px;background:rgba(7,8,11,.8);border-radius:99px;padding:5px 10px;font-size:9px;font-weight:800;letter-spacing:.6px;text-transform:uppercase}
+.gc b{display:block;margin-top:10px;font-size:14px;font-weight:700;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.gc small{color:var(--mu);font-size:12px}
+.add{width:clamp(150px,16vw,200px);flex:none;aspect-ratio:2/3;margin-bottom:44px;border:1.5px solid var(--acc);border-radius:20px;background:none;color:var(--acc);height:auto;white-space:pre-line;text-align:center}
+.empty-b{display:flex;align-items:center;gap:14px;background:var(--s);border:1px solid var(--line);border-radius:20px;padding:20px;color:var(--mu);font-size:13px}
+.tile{width:44px;height:44px;border-radius:13px;background:var(--s2);color:var(--acc);display:flex;align-items:center;justify-content:center;flex:none}
+.bar{display:flex;gap:10px;align-items:center;margin:20px 0 24px}.bar input{margin:0}
+#msgs{height:calc(100vh - 290px);min-height:300px;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin:20px 0 14px}
+.m{max-width:min(560px,80%);background:var(--s2);border-radius:18px;padding:9px 14px;word-break:break-word}
+.m.me{align-self:flex-end;background:var(--acc);color:var(--on)}.m .n{font-size:11px;opacity:.65;font-weight:700}
+.send{display:flex;gap:10px}.send input{margin:0}
+.ov{position:fixed;inset:0;z-index:20;background:rgba(0,0,0,.65);display:flex;align-items:center;justify-content:center;padding:16px;animation:f .15s}
+.sh{width:100%;max-width:520px;max-height:92vh;overflow-y:auto;background:var(--s);border:1px solid var(--line);border-radius:28px}
+.sh .shb{padding:24px}.sh h2{margin-bottom:6px}
+.ban{height:220px;background-size:cover;background-position:center;border-bottom:1px solid var(--line)}
+.dsc{margin:16px 0;color:#c9ccd3;line-height:1.55}.acts{display:flex;gap:12px;align-items:center;flex-wrap:wrap;margin-top:18px}
+.opts{display:grid;gap:8px;margin:12px 0 18px}
+@media(max-width:700px){.ov{align-items:flex-end;padding:0}.sh{border-radius:28px 28px 0 0;max-width:none}}
+@keyframes f{from{opacity:0}}
+.cover{height:clamp(150px,18vw,230px);border-radius:24px;border:1px solid var(--line);background:linear-gradient(135deg,#3a3f4c,#0b0c10) center/cover;position:relative}
+.cover .ph{position:absolute;left:24px;bottom:-54px;padding:4px;background:var(--bg);border-radius:50%;cursor:pointer}
+.ring{width:108px;height:108px;border-radius:50%;border:3px solid var(--acc);display:flex;align-items:center;justify-content:center}
+.av{width:90px;height:90px;border-radius:50%;background-size:cover;background-position:center;background-image:linear-gradient(135deg,#f2f3f6,#9aa0ab);color:var(--on);display:flex;align-items:center;justify-content:center;font-size:38px;font-weight:800}
+.phead{display:flex;justify-content:flex-end;padding:14px 0;min-height:68px}
+.pinfo .meta{display:flex;flex-wrap:wrap;gap:6px 20px;margin-top:10px;font-size:13px}.pinfo .bio{margin-top:14px;max-width:70ch;line-height:1.5}
+.pgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,340px),1fr));gap:0 28px;align-items:start}
+.pt{font-size:17px;font-weight:700;margin:30px 0 12px}
+.list{background:var(--s);border:1px solid var(--line);border-radius:20px;overflow:hidden}
+.item{display:flex;align-items:center;gap:16px;width:100%;height:auto;background:none;color:var(--tx);border-radius:0;border-bottom:1px solid var(--line);padding:16px 18px;text-align:left;justify-content:flex-start;font-weight:600}
+.item:last-child{border-bottom:0}.item:hover{background:var(--s2);opacity:1}.item span{flex:1}.item small{display:block;color:var(--mu);font-size:12px;font-weight:500}
+.item.dgr{color:var(--dg)}.item .ch{color:#fff}
 .team{display:flex;justify-content:space-between;align-items:center}
-.bar{height:8px;border-radius:8px;background:var(--surface2);overflow:hidden;margin:6px 0}.bar i{display:block;height:100%;background:var(--accent)}
+.box{background:var(--s);border:1px solid var(--line);border-radius:20px;padding:20px}
+.pb{height:6px;border-radius:6px;background:var(--s2);overflow:hidden;margin:10px 0 2px}.pb i{display:block;height:100%;background:var(--acc)}
+.back{margin-bottom:20px}
+@media(max-width:700px){.top nav{position:fixed;left:0;right:0;bottom:0;height:68px;background:#0b0c10;border-top:1px solid var(--line);gap:0;padding-bottom:env(safe-area-inset-bottom)}nav button{flex:1;padding:0;font-size:12px}.top{height:60px}main{padding-bottom:100px}}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
 </style>
 </head>
 <body>
 <div id="app"></div>
 <script type="module">
 import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
-import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut,sendPasswordResetEmail} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
 import {getFirestore,doc,getDoc,setDoc,addDoc,deleteDoc,collection,onSnapshot,query,orderBy,limit,serverTimestamp,writeBatch} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
 
-// Config de ton application web Firebase
 const firebaseConfig = {
   apiKey: "AIzaSyBLbHzOFvcogY8lF2MiGjUjTSZuK54yDOE",
   authDomain: "garden-studio-app.firebaseapp.com",
   projectId: "garden-studio-app",
   appId: "1:372004626175:web:595fb202ed192501fef6ca"
 };
-// 2) Même UID propriétaire que dans l'app Flutter
 const OWNER_UID = "1841h12S5Zf4dd3iSr7IyUKiCXU2";
 
 const auth = getAuth(initializeApp(firebaseConfig)), db = getFirestore();
-const $ = document.getElementById("app");
+const A = document.getElementById("app"), q = s => document.querySelector(s);
 const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
-let user, pseudo = "", role = "", tab = "home", unsubs = [];
+let user, pseudo = "", role = "", tab = "home", sub = "", unsubs = [];
 const stop = () => { unsubs.forEach(u => u()); unsubs = []; };
-const live = (q, fn) => unsubs.push(onSnapshot(q, s => fn(s.docs.map(d => ({id: d.id, ...d.data()}))), e => console.error(e)));
+const live = (q2, fn) => unsubs.push(onSnapshot(q2, s => fn(s.docs.map(d => ({id: d.id, ...d.data()}))), e => console.error(e)));
+const staff = () => role === "owner" || role === "co";
+const view = () => q("#view");
 
+/* ---------- helpers visuels (mêmes règles que l'app) ---------- */
+const IC = {user:"M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 3c1.66 0 3 1.34 3 3s-1.34 3-3 3-3-1.34-3-3 1.34-3 3-3zm0 14.2c-2.5 0-4.71-1.28-6-3.22.03-1.99 4-3.08 6-3.08 1.99 0 5.97 1.09 6 3.08-1.29 1.94-3.5 3.22-6 3.22z",lock:"M18 8h-1V6c0-2.76-2.24-5-5-5S7 3.24 7 6v2H6c-1.1 0-2 .9-2 2v10c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V10c0-1.1-.9-2-2-2zm-6 9c-1.1 0-2-.9-2-2s.9-2 2-2 2 .9 2 2-.9 2-2 2zM8.9 8V6c0-1.71 1.39-3.1 3.1-3.1s3.1 1.39 3.1 3.1v2H8.9z",team:"M16 11c1.66 0 2.99-1.34 2.99-3S17.66 5 16 5c-1.66 0-3 1.34-3 3s1.34 3 3 3zm-8 0c1.66 0 2.99-1.34 2.99-3S9.66 5 8 5C6.34 5 5 6.34 5 8s1.34 3 3 3zm0 2c-2.33 0-7 1.17-7 3.5V19h14v-2.5c0-2.33-4.67-3.5-7-3.5zm8 0c-.29 0-.62.02-.97.05 1.16.84 1.97 1.97 1.97 3.45V19h6v-2.5c0-2.33-4.67-3.5-7-3.5z",shield:"M12 1L3 5v6c0 5.55 3.84 10.74 9 12 5.16-1.26 9-6.45 9-12V5l-9-4z",out:"M17 7l-1.41 1.41L18.17 11H8v2h10.17l-2.58 2.59L17 17l5-5-5-5zM4 5h8V3H4c-1.1 0-2 .9-2 2v14c0 1.1.9 2 2 2h8v-2H4V5z",ch:"M10 6L8.59 7.41 13.17 12l-4.58 4.59L10 18l6-6z",cam:"M12 15.2a3.2 3.2 0 100-6.4 3.2 3.2 0 000 6.4zM9 2L7.17 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2h-3.17L15 2H9z"};
+const svg = (k, s = 22) => `<svg width="${s}" height="${s}" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true"><path d="${IC[k]}"/></svg>`;
+const PAL = [["#2a2d36","#12141a"],["#3a3f4c","#1a1d25"],["#4a4f5c","#20232b"],["#5a606e","#161820"]];
+const grad = n => { const p = PAL[[...String(n)].reduce((a, c) => a + c.charCodeAt(0), 0) % 4]; return `linear-gradient(135deg,${p[0]},${p[1]})`; };
+const bg = (u, n = "") => /^(data:image|https?:)/.test(u || "") ? `background-image:url('${esc(u)}')` : `background-image:${grad(n)}`;
+const okc = s => /publi|live|sorti/i.test(s || "") ? "ok" : "";
+const logo = (c = "") => `<div class="logo ${c}"><img src="logo.png" alt="Garden Studio"></div>`;
+const pick = max => new Promise(res => { const i = document.createElement("input"); i.type = "file"; i.accept = "image/*"; i.onchange = () => { const f = i.files[0]; if (!f) return res(null); const im = new Image(); im.onload = () => { const k = Math.min(1, max / Math.max(im.width, im.height)), c = document.createElement("canvas"); c.width = im.width * k; c.height = im.height * k; c.getContext("2d").drawImage(im, 0, 0, c.width, c.height); res(c.toDataURL("image/jpeg", .8)); }; im.src = URL.createObjectURL(f); }; i.click(); });
+function sheet(html, on) {
+  const o = document.createElement("div"); o.className = "ov"; o.innerHTML = `<div class="sh" role="dialog" aria-modal="true">${html}</div>`;
+  const k = e => e.key === "Escape" && close(), close = () => { o.remove(); document.removeEventListener("keydown", k); };
+  document.addEventListener("keydown", k); o.onclick = e => e.target === o && close(); document.body.appendChild(o);
+  on && on(o.querySelector(".sh"), close); return close;
+}
+const toast = m => { const t = document.createElement("div"); t.textContent = m; t.style.cssText = "position:fixed;bottom:90px;left:50%;transform:translateX(-50%);background:#fff;color:#07080b;padding:11px 18px;border-radius:99px;font-weight:700;z-index:30"; document.body.appendChild(t); setTimeout(() => t.remove(), 3000); };
+const saveUser = d => setDoc(doc(db, "users", user.uid), d, {merge: true});
+const byDate = (a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+
+/* ---------- auth / onboarding ---------- */
 onAuthStateChanged(auth, async u => {
-  stop(); user = u;
+  stop(); user = u; sub = "";
   if (!u) return loginView();
   try {
     const ud = await getDoc(doc(db, "users", u.uid));
@@ -72,84 +153,156 @@ onAuthStateChanged(auth, async u => {
     if (!r.exists() && u.uid === OWNER_UID) { await setDoc(doc(db, "roles", u.uid), {role: "owner"}); r = await getDoc(doc(db, "roles", u.uid)); }
     role = r.data()?.role || "";
     role ? shell() : joinView();
-  } catch (e) { $.innerHTML = `<div class="center"><p class="err">${esc(e.message)}</p><button onclick="location.reload()">Réessayer</button></div>`; }
+  } catch (e) { A.innerHTML = `<div class="center"><p class="err">${esc(e.message)}</p><button onclick="location.reload()">Réessayer</button></div>`; }
 });
-
-const logo = `<img src="logo.png" alt="Garden Studio">`;
 function loginView(msg = "") {
-  $.innerHTML = `<div class="center">${logo}<h1>Garden Studio</h1><p class="muted">Connecte-toi ou crée ton compte</p><br>
+  A.innerHTML = `<div class="center">${logo()}<h1>Garden Studio</h1><p class="mu" style="margin-bottom:12px">Connecte-toi ou crée ton compte</p>
   <input id="e" type="email" placeholder="E-mail" autocomplete="email"><input id="p" type="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password">
-  <p class="err" id="err">${esc(msg)}</p><button id="in">Se connecter</button><button class="ghost" id="up">Créer un compte</button></div>`;
-  const go = fn => async () => { try { await fn(auth, e.value.trim(), p.value); } catch (x) { err.textContent = "Échec : " + x.code.replace("auth/", ""); } };
-  document.getElementById("in").onclick = go(signInWithEmailAndPassword); document.getElementById("up").onclick = go(createUserWithEmailAndPassword);
+  <p class="err" id="err">${esc(msg)}</p><div class="row2"><button id="in">Se connecter</button><button class="ghost" id="up">Créer un compte</button></div></div>`;
+  const go = fn => async () => { try { await fn(auth, q("#e").value.trim(), q("#p").value); } catch (x) { q("#err").textContent = "Échec : " + x.code.replace("auth/", ""); } };
+  q("#in").onclick = go(signInWithEmailAndPassword); q("#up").onclick = go(createUserWithEmailAndPassword);
+  q("#p").onkeydown = e => e.key === "Enter" && q("#in").click();
 }
 function pseudoView() {
-  $.innerHTML = `<div class="center">${logo}<h1>Ton pseudo</h1><p class="muted">C'est le nom affiché dans le chat et l'équipe.</p><br>
-  <input id="ps" maxlength="20" placeholder="Pseudo"><button id="ok">Continuer</button></div>`;
-  document.getElementById("ok").onclick = async () => { const v = ps.value.trim(); if (!v) return; await setDoc(doc(db, "users", user.uid), {pseudo: v}, {merge: true}); location.reload(); };
+  A.innerHTML = `<div class="center">${logo()}<h1>Ton pseudo</h1><p class="mu" style="margin-bottom:12px">C'est le nom affiché dans le chat et l'équipe.</p>
+  <input id="ps" maxlength="20" placeholder="Pseudo"><div class="row2"><button id="ok">Continuer</button></div></div>`;
+  q("#ok").onclick = async () => { const v = q("#ps").value.trim(); if (!v) return; await setDoc(doc(db, "users", user.uid), {pseudo: v}, {merge: true}); location.reload(); };
 }
 function joinView() {
-  $.innerHTML = `<div class="center">${logo}<h1>Rejoindre le studio</h1><p class="muted">Code d'invitation ? Entre-le. Sinon, laisse vide.</p><br>
+  A.innerHTML = `<div class="center">${logo()}<h1>Rejoindre le studio</h1><p class="mu" style="margin-bottom:12px">Code d'invitation ? Entre-le. Sinon, laisse vide.</p>
   <input id="c" placeholder="Code d'invitation (facultatif)" style="text-transform:uppercase"><p class="err" id="err"></p>
-  <button id="ok">Rejoindre</button><button class="ghost" id="out">Se déconnecter</button></div>`;
-  document.getElementById("out").onclick = () => signOut(auth);
-  document.getElementById("ok").onclick = async () => {
-    const code = c.value.trim().toUpperCase(), b = writeBatch(db);
+  <div class="row2"><button id="ok">Rejoindre</button><button class="ghost" id="out">Se déconnecter</button></div></div>`;
+  q("#out").onclick = () => signOut(auth);
+  q("#ok").onclick = async () => {
+    const code = q("#c").value.trim().toUpperCase(), b = writeBatch(db);
     b.set(doc(db, "roles", user.uid), code ? {role: "co", code} : {role: "member"});
     if (code) b.delete(doc(db, "invites", code));
-    try { await b.commit(); location.reload(); } catch { err.textContent = code ? "Code invalide ou déjà utilisé." : "Impossible de rejoindre."; }
+    try { await b.commit(); location.reload(); } catch { q("#err").textContent = code ? "Code invalide ou déjà utilisé." : "Impossible de rejoindre."; }
   };
 }
 
-const staff = () => role === "owner" || role === "co";
+/* ---------- coque ---------- */
+const TABS = [["home", "Accueil"], ["games", "Jeux"], ["chat", "Discussion"], ["me", "Profil"]];
+const goTab = k => { tab = k; sub = ""; stop(); shell(); window.scrollTo(0, 0); };
 function shell() {
-  const tabs = [["home", "Accueil"], ["games", "Jeux"], ["chat", "Discussion"], ["me", "Profil"]];
-  $.innerHTML = `<main id="view"></main><nav>${tabs.map(([k, l]) => `<button data-t="${k}" class="${k === tab ? "on" : ""}">${l}</button>`).join("")}</nav>`;
-  $.querySelectorAll("nav button").forEach(b => b.onclick = () => { tab = b.dataset.t; stop(); shell(); });
+  A.innerHTML = `<header class="top"><div class="brand">${logo()}<span>GARDEN STUDIO</span></div><nav>${TABS.map(([k, l]) => `<button data-t="${k}" class="${k === tab ? "on" : ""}">${l}<i></i></button>`).join("")}</nav></header><main id="view"></main>`;
+  A.querySelectorAll("nav button").forEach(b => b.onclick = () => goTab(b.dataset.t));
   ({home, games: gamesView, chat: chatView, me: meView})[tab]();
 }
-const view = () => document.getElementById("view");
 
+/* ---------- jeux ---------- */
+let GAMES = [];
 function gameCard(g) {
-  const link = g.link ? `<a class="chip" style="text-decoration:none" target="_blank" rel="noopener noreferrer" href="${esc(/^https?:/.test(g.link) ? g.link : "https://" + g.link)}">Ouvrir</a>` : "";
-  return `<div class="box game"><div class="ph">${esc(g.name)}</div><div class="in"><span class="chip">${esc(g.status || "—")}</span><p class="muted">${esc(g.genre)}</p><p>${esc(g.desc)}</p>${link}${staff() ? `<button class="danger" data-del="${g.id}">Supprimer</button>` : ""}</div></div>`;
+  const img = g.image || g.banner, has = /^(data:image|https?:)/.test(img || "");
+  return `<button class="gc" data-id="${esc(g.id)}" style="background:none;height:auto;padding:0;border-radius:0;display:block"><div class="po" style="${bg(img, g.name)}">${has ? "" : esc(g.name)}${g.status ? `<span class="pl">${esc(g.status)}</span>` : ""}</div><b>${esc(g.name)}</b><small>${esc(g.genre || "Jeu")}</small></button>`;
+}
+const bindCards = root => root.querySelectorAll(".gc").forEach(b => b.onclick = () => showGame(GAMES.find(x => x.id === b.dataset.id)));
+function showGame(g) {
+  if (!g) return;
+  const link = g.link ? (/^https?:/.test(g.link) ? g.link : "https://" + g.link) : "";
+  sheet(`<div class="ban" style="${bg(g.banner || g.image, g.name)}"></div><div class="shb"><h2>${esc(g.name)}</h2><div class="tags">${g.status ? `<span class="st ${okc(g.status)}">${esc(g.status)}</span>` : ""}${g.genre ? `<span class="tag">${esc(g.genre)}</span>` : ""}</div>${g.desc ? `<p class="dsc">${esc(g.desc)}</p>` : ""}<div class="acts">${link ? `<a class="btn" target="_blank" rel="noopener noreferrer" href="${esc(link)}">Ouvrir le jeu</a>` : ""}${staff() ? `<button class="danger" id="gd">Supprimer</button>` : ""}</div></div>`,
+    (el, close) => { const d = el.querySelector("#gd"); if (d) d.onclick = async () => { if (confirm("Supprimer ce jeu ?")) { await deleteDoc(doc(db, "games", g.id)); close(); } }; });
+}
+function addGame() {
+  let img = "";
+  sheet(`<div class="shb"><h2 style="margin-bottom:16px">Ajouter un jeu</h2><input id="gn" placeholder="Nom"><input id="gg" placeholder="Genre (aventure, action…)"><input id="gs" placeholder="Statut (en dev, publié…)"><input id="gl" placeholder="Lien du jeu"><textarea id="gdsc" rows="3" placeholder="Description"></textarea>
+  <div class="acts" style="margin:0 0 18px"><button class="ghost sm" id="gi">${svg("cam", 18)} Choisir une image</button><span class="mu" id="gim"></span></div><button id="gok" style="width:100%">Ajouter le jeu</button></div>`,
+    (el, close) => {
+      el.querySelector("#gi").onclick = async () => { const r = await pick(600); if (r) { img = r; el.querySelector("#gim").textContent = "Image ajoutée"; } };
+      el.querySelector("#gok").onclick = async () => {
+        const n = el.querySelector("#gn").value.trim(); if (!n) return;
+        await addDoc(collection(db, "games"), {name: n, genre: el.querySelector("#gg").value, status: el.querySelector("#gs").value, link: el.querySelector("#gl").value, desc: el.querySelector("#gdsc").value, image: img, createdAt: serverTimestamp()}); close();
+      };
+    });
 }
 function home() {
-  view().innerHTML = `<h1>Salut ${esc(pseudo)}</h1><p class="muted">Les jeux du studio</p><br><div class="games" id="g"></div>`;
-  live(collection(db, "games"), gs => g.innerHTML = gs.length ? gs.map(gameCard).join("") : `<p class="muted">Aucun jeu pour l'instant. Ajoute-en un depuis l'onglet Jeux.</p>`);
+  view().innerHTML = `<div id="hero"></div><div class="sec"><h2>Nos jeux</h2><a id="all">Voir tout</a></div><div id="rail"></div>`;
+  q("#all").onclick = () => goTab("games");
+  let i = 0;
+  const paint = () => {
+    if (!GAMES.length) { q("#hero").innerHTML = `<div class="hero empty"><h1>Des jeux<br>qui restent.</h1>${staff() ? `<button class="dk" id="ha">Ajouter un jeu</button>` : ""}</div>`; if (staff()) q("#ha").onclick = addGame; return; }
+    const g = GAMES[i % GAMES.length], link = g.link ? (/^https?:/.test(g.link) ? g.link : "https://" + g.link) : "";
+    q("#hero").innerHTML = `<div class="hero" style="${bg(g.banner || g.image, g.name)}"><div class="tags">${g.status ? `<span class="st ${okc(g.status)}" style="background:rgba(7,8,11,.7)">${esc(g.status)}</span>` : ""}${g.genre ? `<span class="tag" style="background:rgba(7,8,11,.5)">${esc(g.genre)}</span>` : ""}</div><h1>${esc(g.name)}</h1><div class="acts"><button id="hv">Voir le jeu</button></div>${GAMES.length > 1 ? `<div class="dots">${GAMES.map((_, n) => `<i class="${n === i % GAMES.length ? "on" : ""}"></i>`).join("")}</div>` : ""}</div>`;
+    q("#hv").onclick = () => showGame(g);
+  };
+  const timer = setInterval(() => { if (GAMES.length > 1) { i++; paint(); } }, 6000); unsubs.push(() => clearInterval(timer));
+  live(collection(db, "games"), gs => {
+    GAMES = gs.sort(byDate); paint();
+    q("#rail").innerHTML = GAMES.length ? `<div class="rail">${GAMES.map(gameCard).join("")}${staff() ? `<button class="add" id="ra">Ajouter\nun jeu</button>` : ""}</div>` : `<div class="empty-b"><div class="tile">${svg("team", 22)}</div><span>${staff() ? "Aucun jeu pour le moment. Ajoute-en un avec le bouton ci-dessus." : "Aucun jeu pour le moment."}</span></div>`;
+    bindCards(view()); if (q("#ra")) q("#ra").onclick = addGame;
+  });
 }
 function gamesView() {
-  const f = staff() ? `<div class="box"><h2>Ajouter un jeu</h2><input id="n" placeholder="Nom"><input id="ge" placeholder="Genre (aventure, action…)"><input id="s" placeholder="Statut (en dev, publié…)"><input id="l" placeholder="Lien du jeu"><textarea id="d" rows="3" placeholder="Description"></textarea><button id="add">Ajouter le jeu</button></div>` : "";
-  view().innerHTML = `<h1>Jeux</h1><br>${f}<div class="games" id="g"></div>`;
-  if (staff()) document.getElementById("add").onclick = async () => { if (!n.value.trim()) return; await addDoc(collection(db, "games"), {name: n.value.trim(), genre: ge.value, status: s.value, link: l.value, desc: d.value, createdAt: serverTimestamp()}); n.value = ge.value = s.value = l.value = d.value = ""; };
-  live(collection(db, "games"), gs => { g.innerHTML = gs.map(gameCard).join(""); g.querySelectorAll("[data-del]").forEach(b => b.onclick = () => confirm("Supprimer ce jeu ?") && deleteDoc(doc(db, "games", b.dataset.del))); });
+  view().innerHTML = `<h1>Jeux</h1><div class="bar"><input id="sr" placeholder="Rechercher un jeu…">${staff() ? `<button id="ag" style="flex:none">Ajouter un jeu</button>` : ""}</div><div class="grid" id="g"></div>`;
+  if (staff()) q("#ag").onclick = addGame;
+  const paint = () => { const t = q("#sr").value.trim().toLowerCase(), l = GAMES.filter(g => !t || (g.name + " " + (g.genre || "")).toLowerCase().includes(t)); q("#g").innerHTML = l.length ? l.map(gameCard).join("") : `<div class="empty-b" style="grid-column:1/-1"><span>Aucun jeu trouvé.</span></div>`; bindCards(q("#g")); };
+  q("#sr").oninput = paint;
+  live(collection(db, "games"), gs => { GAMES = gs.sort(byDate); paint(); });
 }
+
+/* ---------- discussion ---------- */
 function chatView() {
-  view().innerHTML = `<h1>Discussion</h1><br><div id="msgs"></div><div class="row"><input id="t" placeholder="Écrire un message…"><button id="send">Envoyer</button></div>`;
-  const send = async () => { const v = t.value.trim(); if (!v) return; t.value = ""; await addDoc(collection(db, "messages"), {text: v, name: pseudo, by: user.uid, createdAt: serverTimestamp()}); };
-  document.getElementById("send").onclick = send; t.onkeydown = e => e.key === "Enter" && send();
+  view().innerHTML = `<h1>Discussion</h1><div id="msgs"></div><div class="send"><input id="t" placeholder="Écrire un message…" autocomplete="off"><button id="send" style="flex:none">Envoyer</button></div>`;
+  const send = async () => { const v = q("#t").value.trim(); if (!v) return; q("#t").value = ""; await addDoc(collection(db, "messages"), {text: v, name: pseudo, by: user.uid, createdAt: serverTimestamp()}); };
+  q("#send").onclick = send; q("#t").onkeydown = e => e.key === "Enter" && send();
   live(query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(100)), ms => {
-    msgs.innerHTML = ms.reverse().map(m => `<div class="m ${m.by === user.uid ? "me" : ""}"><div class="n">${esc(m.name)}</div>${esc(m.text)}</div>`).join("") || `<p class="muted">Aucun message. Lance la discussion.</p>`;
-    msgs.scrollTop = msgs.scrollHeight;
+    const box = q("#msgs");
+    box.innerHTML = ms.reverse().map(m => `<div class="m ${m.by === user.uid ? "me" : ""}"><div class="n">${esc(m.name)}</div>${esc(m.text)}</div>`).join("") || `<p class="mu">Aucun message. Lance la discussion.</p>`;
+    box.scrollTop = box.scrollHeight;
   });
 }
+
+/* ---------- profil ---------- */
+const ROLES = {owner: "Propriétaire", co: "Co-propriétaire", member: "Membre"};
 function meView() {
-  const labels = {owner: "Propriétaire", co: "Co-propriétaire", member: "Membre"};
-  view().innerHTML = `<h1>${esc(pseudo)}</h1><p class="muted">${labels[role]}</p><br>
-  <h2>Équipe et parts</h2><div id="team"></div><div id="inv"></div><br><button class="ghost" id="out">Se déconnecter</button>`;
-  document.getElementById("out").onclick = () => signOut(auth);
+  if (sub === "team") return teamView();
+  if (sub === "access") return accessView();
+  const row = (id, ico, t, s2 = "", d = "") => `<button class="item ${d}" id="${id}"><div class="tile" ${d ? 'style="color:var(--dg)"' : ""}>${svg(ico, 22)}</div><span>${t}${s2 ? `<small>${s2}</small>` : ""}</span>${d ? "" : `<span class="ch" style="flex:none">${svg("ch")}</span>`}</button>`;
+  view().innerHTML = `<div id="prof"></div><div class="pgrid">
+  <div><div class="pt">Général</div><div class="list">${row("r-edit", "user", "Modifier le profil")}${row("r-pw", "lock", "Mot de passe", "Recevoir un email de réinitialisation")}</div></div>
+  ${staff() ? `<div><div class="pt">Accès du studio</div><div class="list">${row("r-team", "team", "Équipe")}${row("r-acc", "shield", "Accès", "Codes d'invitation et rôles")}</div></div>` : ""}
+  <div><div class="pt">Autres</div><div class="list">${row("r-out", "out", "Déconnexion", "", "dgr")}</div></div></div>`;
+  q("#r-out").onclick = () => sheet(`<div class="shb"><h2>Se déconnecter ?</h2><p class="dsc">Tu devras te reconnecter avec ton email et ton mot de passe.</p><div class="acts"><button id="yes">Se déconnecter</button><button class="ghost" id="no">Annuler</button></div></div>`, (el, close) => { el.querySelector("#no").onclick = close; el.querySelector("#yes").onclick = () => { close(); signOut(auth); }; });
+  q("#r-pw").onclick = async () => { try { await sendPasswordResetEmail(auth, user.email); toast("Email envoyé. Vérifie ta boîte de réception."); } catch (e) { toast("Impossible d'envoyer l'email : " + e.code); } };
+  if (staff()) { q("#r-team").onclick = () => { sub = "team"; meView(); }; q("#r-acc").onclick = () => { sub = "access"; meView(); }; }
+  let d = {};
+  const edit = () => sheet(`<div class="shb"><h2 style="margin-bottom:16px">Modifier le profil</h2>
+    <input id="ep" maxlength="20" placeholder="Pseudo" value="${esc(d.pseudo || pseudo)}"><input id="en" placeholder="Nom (facultatif)" value="${esc(d.displayName || "")}"><textarea id="eb" rows="3" maxlength="200" placeholder="Bio">${esc(d.bio || "")}</textarea>
+    <div class="opts"><button class="ghost" id="e1">Choisir une photo</button><button class="ghost" id="e2">Changer la bannière</button>${d.photo ? `<button class="danger" id="e3">Retirer la photo</button>` : ""}${d.cover ? `<button class="danger" id="e4">Retirer la bannière</button>` : ""}</div>
+    <button id="es" style="width:100%">Enregistrer</button></div>`, (el, close) => {
+    const run = async fn => { try { await fn(); } catch (e) { toast("Impossible d'enregistrer : " + e.code); } };
+    el.querySelector("#e1").onclick = () => run(async () => { const r = await pick(400); if (r) { await saveUser({photo: r}); close(); } });
+    el.querySelector("#e2").onclick = () => run(async () => { const r = await pick(1080); if (r) { await saveUser({cover: r}); close(); } });
+    if (d.photo) el.querySelector("#e3").onclick = () => run(async () => { await saveUser({photo: ""}); close(); });
+    if (d.cover) el.querySelector("#e4").onclick = () => run(async () => { await saveUser({cover: ""}); close(); });
+    el.querySelector("#es").onclick = () => run(async () => { const p = el.querySelector("#ep").value.trim(); if (!p) return; pseudo = p; await saveUser({pseudo: p, displayName: el.querySelector("#en").value.trim(), bio: el.querySelector("#eb").value.trim()}); close(); });
+  });
+  q("#r-edit").onclick = edit;
+  unsubs.push(onSnapshot(doc(db, "users", user.uid), s2 => {
+    d = s2.data() || {};
+    const since = d.createdAt?.toDate ? d.createdAt.toDate().toLocaleDateString("fr-FR", {day: "numeric", month: "long", year: "numeric"}) : "";
+    const nm = d.pseudo || pseudo;
+    q("#prof").innerHTML = `<div class="cover" style="${/^(data:image|https?:)/.test(d.cover || "") ? `background-image:url('${esc(d.cover)}')` : ""}"><div class="ph" id="ph"><div class="ring"><div class="av" style="${/^(data:image|https?:)/.test(d.photo || "") ? `background-image:url('${esc(d.photo)}')` : ""}">${d.photo ? "" : esc((nm || "?")[0].toUpperCase())}</div></div></div></div>
+    <div class="phead"><button class="ghost sm" id="mod">Modifier</button></div>
+    <div class="pinfo"><h1>${esc(nm)}</h1>${d.displayName ? `<p class="mu" style="font-size:14px">${esc(d.displayName)}</p>` : ""}<div class="meta">${since ? `<span>Membre depuis le ${since}</span>` : ""}${ROLES[role] ? `<span>${ROLES[role]}</span>` : ""}</div>${d.bio ? `<p class="bio">${esc(d.bio)}</p>` : ""}</div>`;
+    q("#mod").onclick = edit; q("#ph").onclick = edit;
+  }));
+}
+const back = () => `<button class="ghost sm back" id="bk">← Profil</button>`;
+const bindBack = () => q("#bk").onclick = () => { sub = ""; stop(); meView(); };
+function teamView() {
+  view().innerHTML = back() + `<h1>Équipe et parts</h1><div id="team" style="margin-top:22px"></div>`; bindBack();
   live(collection(db, "team"), ts => {
     const total = ts.reduce((a, t) => a + (+t.share || 0), 0);
-    team.innerHTML = ts.map(t => `<div class="box"><div class="team"><b>${esc(t.name)}</b><span class="chip">${+t.share || 0} %</span></div><p class="muted">${esc(t.rank)}</p><div class="bar"><i style="width:${Math.min(+t.share || 0, 100)}%"></i></div></div>`).join("")
-      + `<p class="${total > 100 ? "err" : "muted"}">Total des parts : ${total} %${total > 100 ? " — dépasse 100 %" : ""}</p>`;
+    q("#team").innerHTML = `<div class="grid" style="grid-template-columns:repeat(auto-fill,minmax(260px,1fr))">` + ts.map(t => `<div class="box"><div class="team"><b>${esc(t.name)}</b><span class="tag">${+t.share || 0} %</span></div><p class="mu">${esc(t.rank)}</p><div class="pb"><i style="width:${Math.min(+t.share || 0, 100)}%"></i></div></div>`).join("") + `</div><p class="${total > 100 ? "err" : "mu"}" style="margin-top:18px">Total des parts : ${total} %${total > 100 ? " — dépasse 100 %" : ""}</p>`;
   });
-  if (staff()) {
-    inv.innerHTML = `<br><div class="box"><h2>Inviter un co-propriétaire</h2><p class="muted">Chaque code ne sert qu'une seule fois.</p><br><button id="gen">Générer un code</button><p id="code" style="font-weight:800;letter-spacing:3px;margin-top:10px"></p></div>`;
-    document.getElementById("gen").onclick = async () => {
-      const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(8)), c = [...r].map(x => a[x % a.length]).join("");
-      try { await setDoc(doc(db, "invites", c), {role: "co", createdAt: serverTimestamp(), by: user.uid}); code.textContent = c; } catch (e) { code.textContent = "Refusé : " + e.code; }
-    };
-  }
+}
+function accessView() {
+  view().innerHTML = back() + `<h1>Accès</h1><div class="box" style="margin-top:22px;max-width:520px"><h2 style="font-size:18px;margin-bottom:6px">Inviter un co-propriétaire</h2><p class="mu" style="margin-bottom:16px">Chaque code ne sert qu'une seule fois.</p><button id="gen">Générer un code</button><p id="code" style="font-weight:800;letter-spacing:4px;margin-top:14px;font-size:18px"></p></div>`; bindBack();
+  q("#gen").onclick = async () => {
+    const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(8)), c = [...r].map(x => a[x % a.length]).join("");
+    try { await setDoc(doc(db, "invites", c), {role: "co", createdAt: serverTimestamp(), by: user.uid}); q("#code").textContent = c; } catch (e) { q("#code").textContent = "Refusé : " + e.code; }
+  };
 }
 </script>
 </body>
