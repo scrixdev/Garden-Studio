@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Garden Studio</title>
+<link rel="icon" href="logo.png">
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@500;700;800&display=swap" rel="stylesheet">
+<style>
+:root{--bg:#07080b;--surface:#12141a;--surface2:#1a1d25;--line:#232733;--accent:#d4d7dd;--on:#07080b;--text:#f4f5f7;--muted:#8a8f99;--ok:#34d399;--danger:#ff6b6b}
+*{box-sizing:border-box;margin:0}
+body{background:var(--bg);color:var(--text);font:500 15px/1.5 Manrope,system-ui,sans-serif;min-height:100vh;padding-bottom:84px}
+h1{font-size:26px;font-weight:800;letter-spacing:-.8px}
+h2{font-size:20px;font-weight:800;letter-spacing:-.4px;margin-bottom:12px}
+main{max-width:720px;margin:0 auto;padding:22px 18px}
+.muted{color:var(--muted);font-size:13px}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:20px;padding:16px;margin-bottom:12px}
+input,textarea{width:100%;background:var(--surface);color:var(--text);border:1px solid #2a2e3a;border-radius:14px;padding:13px 14px;font:inherit;margin-bottom:10px}
+input:focus,textarea:focus,button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+button{font:700 14px Manrope,sans-serif;border:0;border-radius:14px;padding:12px 18px;cursor:pointer;background:var(--accent);color:var(--on)}
+button.ghost{background:transparent;color:var(--muted)}
+button.danger{background:transparent;color:var(--danger)}
+.center{min-height:100vh;display:flex;flex-direction:column;justify-content:center;align-items:center;gap:6px;padding:28px;max-width:380px;margin:0 auto;text-align:center}
+.center>*{width:100%}.center img{width:84px;height:84px;border-radius:20px;margin:0 auto 14px}
+.err{color:var(--danger);font-size:13px;min-height:20px}
+nav{position:fixed;bottom:0;left:0;right:0;background:#0b0c10;border-top:1px solid var(--line);display:flex;height:68px}
+nav button{flex:1;background:none;color:var(--muted);border-radius:0;border-bottom:3px solid transparent}
+nav button.on{color:#fff;border-bottom-color:var(--accent)}
+.games{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:12px}
+.game{padding:0;overflow:hidden}.game .ph{aspect-ratio:2/3;background:linear-gradient(160deg,#3a3f4c,#12141a);display:flex;align-items:flex-end;padding:12px;font-weight:800;font-size:18px}
+.game .in{padding:10px 12px}
+.chip{display:inline-block;font-size:12px;font-weight:700;padding:3px 10px;border-radius:99px;background:var(--surface2);color:var(--accent)}
+#msgs{height:55vh;overflow-y:auto;display:flex;flex-direction:column;gap:8px;margin-bottom:12px}
+.m{max-width:80%;background:var(--surface2);border-radius:16px;padding:8px 12px}.m.me{align-self:flex-end;background:var(--accent);color:var(--on)}.m .n{font-size:11px;opacity:.7}
+.row{display:flex;gap:8px}.row input{margin:0}
+.team{display:flex;justify-content:space-between;align-items:center}
+.bar{height:8px;border-radius:8px;background:var(--surface2);overflow:hidden;margin:6px 0}.bar i{display:block;height:100%;background:var(--accent)}
+</style>
+</head>
+<body>
+<div id="app"></div>
+<script type="module">
+import {initializeApp} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-app.js";
+import {getAuth,onAuthStateChanged,signInWithEmailAndPassword,createUserWithEmailAndPassword,signOut} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-auth.js";
+import {getFirestore,doc,getDoc,setDoc,addDoc,deleteDoc,collection,onSnapshot,query,orderBy,limit,serverTimestamp,writeBatch} from "https://www.gstatic.com/firebasejs/10.14.1/firebase-firestore.js";
+
+// Config de ton application web Firebase
+const firebaseConfig = {
+  apiKey: "AIzaSyBLbHzOFvcogY8lF2MiGjUjTSZuK54yDOE",
+  authDomain: "garden-studio-app.firebaseapp.com",
+  projectId: "garden-studio-app",
+  appId: "1:372004626175:web:595fb202ed192501fef6ca"
+};
+// 2) Même UID propriétaire que dans l'app Flutter
+const OWNER_UID = "1841h12S5Zf4dd3iSr7IyUKiCXU2";
+
+const auth = getAuth(initializeApp(firebaseConfig)), db = getFirestore();
+const $ = document.getElementById("app");
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+let user, pseudo = "", role = "", tab = "home", unsubs = [];
+const stop = () => { unsubs.forEach(u => u()); unsubs = []; };
+const live = (q, fn) => unsubs.push(onSnapshot(q, s => fn(s.docs.map(d => ({id: d.id, ...d.data()}))), e => console.error(e)));
+
+onAuthStateChanged(auth, async u => {
+  stop(); user = u;
+  if (!u) return loginView();
+  try {
+    const ud = await getDoc(doc(db, "users", u.uid));
+    pseudo = ud.data()?.pseudo || "";
+    if (!pseudo) return pseudoView();
+    let r = await getDoc(doc(db, "roles", u.uid));
+    if (!r.exists() && u.uid === OWNER_UID) { await setDoc(doc(db, "roles", u.uid), {role: "owner"}); r = await getDoc(doc(db, "roles", u.uid)); }
+    role = r.data()?.role || "";
+    role ? shell() : joinView();
+  } catch (e) { $.innerHTML = `<div class="center"><p class="err">${esc(e.message)}</p><button onclick="location.reload()">Réessayer</button></div>`; }
+});
+
+const logo = `<img src="logo.png" alt="Garden Studio">`;
+function loginView(msg = "") {
+  $.innerHTML = `<div class="center">${logo}<h1>Garden Studio</h1><p class="muted">Connecte-toi ou crée ton compte</p><br>
+  <input id="e" type="email" placeholder="E-mail" autocomplete="email"><input id="p" type="password" placeholder="Mot de passe (6 caractères min.)" autocomplete="current-password">
+  <p class="err" id="err">${esc(msg)}</p><button id="in">Se connecter</button><button class="ghost" id="up">Créer un compte</button></div>`;
+  const go = fn => async () => { try { await fn(auth, e.value.trim(), p.value); } catch (x) { err.textContent = "Échec : " + x.code.replace("auth/", ""); } };
+  document.getElementById("in").onclick = go(signInWithEmailAndPassword); document.getElementById("up").onclick = go(createUserWithEmailAndPassword);
+}
+function pseudoView() {
+  $.innerHTML = `<div class="center">${logo}<h1>Ton pseudo</h1><p class="muted">C'est le nom affiché dans le chat et l'équipe.</p><br>
+  <input id="ps" maxlength="20" placeholder="Pseudo"><button id="ok">Continuer</button></div>`;
+  document.getElementById("ok").onclick = async () => { const v = ps.value.trim(); if (!v) return; await setDoc(doc(db, "users", user.uid), {pseudo: v}, {merge: true}); location.reload(); };
+}
+function joinView() {
+  $.innerHTML = `<div class="center">${logo}<h1>Rejoindre le studio</h1><p class="muted">Code d'invitation ? Entre-le. Sinon, laisse vide.</p><br>
+  <input id="c" placeholder="Code d'invitation (facultatif)" style="text-transform:uppercase"><p class="err" id="err"></p>
+  <button id="ok">Rejoindre</button><button class="ghost" id="out">Se déconnecter</button></div>`;
+  document.getElementById("out").onclick = () => signOut(auth);
+  document.getElementById("ok").onclick = async () => {
+    const code = c.value.trim().toUpperCase(), b = writeBatch(db);
+    b.set(doc(db, "roles", user.uid), code ? {role: "co", code} : {role: "member"});
+    if (code) b.delete(doc(db, "invites", code));
+    try { await b.commit(); location.reload(); } catch { err.textContent = code ? "Code invalide ou déjà utilisé." : "Impossible de rejoindre."; }
+  };
+}
+
+const staff = () => role === "owner" || role === "co";
+function shell() {
+  const tabs = [["home", "Accueil"], ["games", "Jeux"], ["chat", "Discussion"], ["me", "Profil"]];
+  $.innerHTML = `<main id="view"></main><nav>${tabs.map(([k, l]) => `<button data-t="${k}" class="${k === tab ? "on" : ""}">${l}</button>`).join("")}</nav>`;
+  $.querySelectorAll("nav button").forEach(b => b.onclick = () => { tab = b.dataset.t; stop(); shell(); });
+  ({home, games: gamesView, chat: chatView, me: meView})[tab]();
+}
+const view = () => document.getElementById("view");
+
+function gameCard(g) {
+  const link = g.link ? `<a class="chip" style="text-decoration:none" target="_blank" rel="noopener noreferrer" href="${esc(/^https?:/.test(g.link) ? g.link : "https://" + g.link)}">Ouvrir</a>` : "";
+  return `<div class="box game"><div class="ph">${esc(g.name)}</div><div class="in"><span class="chip">${esc(g.status || "—")}</span><p class="muted">${esc(g.genre)}</p><p>${esc(g.desc)}</p>${link}${staff() ? `<button class="danger" data-del="${g.id}">Supprimer</button>` : ""}</div></div>`;
+}
+function home() {
+  view().innerHTML = `<h1>Salut ${esc(pseudo)}</h1><p class="muted">Les jeux du studio</p><br><div class="games" id="g"></div>`;
+  live(collection(db, "games"), gs => g.innerHTML = gs.length ? gs.map(gameCard).join("") : `<p class="muted">Aucun jeu pour l'instant. Ajoute-en un depuis l'onglet Jeux.</p>`);
+}
+function gamesView() {
+  const f = staff() ? `<div class="box"><h2>Ajouter un jeu</h2><input id="n" placeholder="Nom"><input id="ge" placeholder="Genre (aventure, action…)"><input id="s" placeholder="Statut (en dev, publié…)"><input id="l" placeholder="Lien du jeu"><textarea id="d" rows="3" placeholder="Description"></textarea><button id="add">Ajouter le jeu</button></div>` : "";
+  view().innerHTML = `<h1>Jeux</h1><br>${f}<div class="games" id="g"></div>`;
+  if (staff()) document.getElementById("add").onclick = async () => { if (!n.value.trim()) return; await addDoc(collection(db, "games"), {name: n.value.trim(), genre: ge.value, status: s.value, link: l.value, desc: d.value, createdAt: serverTimestamp()}); n.value = ge.value = s.value = l.value = d.value = ""; };
+  live(collection(db, "games"), gs => { g.innerHTML = gs.map(gameCard).join(""); g.querySelectorAll("[data-del]").forEach(b => b.onclick = () => confirm("Supprimer ce jeu ?") && deleteDoc(doc(db, "games", b.dataset.del))); });
+}
+function chatView() {
+  view().innerHTML = `<h1>Discussion</h1><br><div id="msgs"></div><div class="row"><input id="t" placeholder="Écrire un message…"><button id="send">Envoyer</button></div>`;
+  const send = async () => { const v = t.value.trim(); if (!v) return; t.value = ""; await addDoc(collection(db, "messages"), {text: v, name: pseudo, by: user.uid, createdAt: serverTimestamp()}); };
+  document.getElementById("send").onclick = send; t.onkeydown = e => e.key === "Enter" && send();
+  live(query(collection(db, "messages"), orderBy("createdAt", "desc"), limit(100)), ms => {
+    msgs.innerHTML = ms.reverse().map(m => `<div class="m ${m.by === user.uid ? "me" : ""}"><div class="n">${esc(m.name)}</div>${esc(m.text)}</div>`).join("") || `<p class="muted">Aucun message. Lance la discussion.</p>`;
+    msgs.scrollTop = msgs.scrollHeight;
+  });
+}
+function meView() {
+  const labels = {owner: "Propriétaire", co: "Co-propriétaire", member: "Membre"};
+  view().innerHTML = `<h1>${esc(pseudo)}</h1><p class="muted">${labels[role]}</p><br>
+  <h2>Équipe et parts</h2><div id="team"></div><div id="inv"></div><br><button class="ghost" id="out">Se déconnecter</button>`;
+  document.getElementById("out").onclick = () => signOut(auth);
+  live(collection(db, "team"), ts => {
+    const total = ts.reduce((a, t) => a + (+t.share || 0), 0);
+    team.innerHTML = ts.map(t => `<div class="box"><div class="team"><b>${esc(t.name)}</b><span class="chip">${+t.share || 0} %</span></div><p class="muted">${esc(t.rank)}</p><div class="bar"><i style="width:${Math.min(+t.share || 0, 100)}%"></i></div></div>`).join("")
+      + `<p class="${total > 100 ? "err" : "muted"}">Total des parts : ${total} %${total > 100 ? " — dépasse 100 %" : ""}</p>`;
+  });
+  if (staff()) {
+    inv.innerHTML = `<br><div class="box"><h2>Inviter un co-propriétaire</h2><p class="muted">Chaque code ne sert qu'une seule fois.</p><br><button id="gen">Générer un code</button><p id="code" style="font-weight:800;letter-spacing:3px;margin-top:10px"></p></div>`;
+    document.getElementById("gen").onclick = async () => {
+      const a = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789", r = crypto.getRandomValues(new Uint8Array(8)), c = [...r].map(x => a[x % a.length]).join("");
+      try { await setDoc(doc(db, "invites", c), {role: "co", createdAt: serverTimestamp(), by: user.uid}); code.textContent = c; } catch (e) { code.textContent = "Refusé : " + e.code; }
+    };
+  }
+}
+</script>
+</body>
+</html>
